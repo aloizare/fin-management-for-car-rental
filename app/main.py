@@ -5,42 +5,59 @@ from sqlalchemy.orm import Session
 from app.db import models
 from app.db.database import engine, get_db
 from app import schemas
-from app.core.security import get_password_hash
+from app.core.security import get_password_hash, verify_password, create_access_token
+
 models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="Fin-Management API", version="1.0.0")
+
 
 @app.get("/")
 def read_root():
     return {"test"}
 
+
 @app.post("/organizations/", response_model=schemas.OrganizationResponse)
 def create_organization(org: schemas.OrganizationCreate, db: Session = Depends(get_db)):
-    db_org = db.query(models.Organization).filter(models.Organization.organization_code == org.organization_code).first()
+    db_org = (
+        db.query(models.Organization)
+        .filter(models.Organization.organization_code == org.organization_code)
+        .first()
+    )
     if db_org:
         raise HTTPException(status_code=400, detail="kode organisasi sudah ada")
-    
+
     new_org = models.Organization(
-        organization_name=org.organization_name,
-        organization_code=org.organization_code
+        organization_name=org.organization_name, organization_code=org.organization_code
     )
 
     db.add(new_org)
     db.commit()
     db.refresh(new_org)
-    
+
     return new_org
+
 
 @app.post("/register/", response_model=schemas.UserResponse)
 def register_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
-    db_user = db.query(models.User).filter(
-        (models.User.email == user.email) | (models.User.username == user.username)
-    ).first()
-    
-    if db_user:
-        raise HTTPException(status_code=400, detail="Email atau Username sudah terdaftar")
+    db_user = (
+        db.query(models.User)
+        .filter(
+            (models.User.email == user.email) | (models.User.username == user.username)
+        )
+        .first()
+    )
 
-    db_org = db.query(models.Organization).filter(models.Organization.id == user.organization_id).first()
+    if db_user:
+        raise HTTPException(
+            status_code=400, detail="Email atau Username sudah terdaftar"
+        )
+
+    db_org = (
+        db.query(models.Organization)
+        .filter(models.Organization.id == user.organization_id)
+        .first()
+    )
     if not db_org:
         raise HTTPException(status_code=404, detail="Organisasi tidak ditemukan")
 
@@ -51,11 +68,38 @@ def register_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
         email=user.email,
         password=hashed_password,
         role=user.role,
-        organization_id=user.organization_id
+        organization_id=user.organization_id,
     )
 
     db.add(new_user)
     db.commit()
     db.refresh(new_user)
-    
+
     return new_user
+
+
+@app.post("/login/")
+def login_user(credentials: schemas.LoginRequest, db: Session = Depends(get_db)):
+    user = db.query(models.User).filter(models.User.email == credentials.email).first()
+
+    if not user:
+        raise HTTPException(status_code=401, detail="Email atau Password salah")
+
+    if not verify_password(credentials.password, user.password):
+        raise HTTPException(status_code=401, detail="Email atau Password salah")
+
+    token = create_access_token(
+        {"sub": user.email, "user_id": str(user.id), "role": user.role}
+    )
+
+    return {
+        "message": "Login berhasil",
+        "access_token": token,
+        "token_type": "bearer",
+        "user": {
+            "id": str(user.id),
+            "username": user.username,
+            "email": user.email,
+            "role": user.role,
+        },
+    }
