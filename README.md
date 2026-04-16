@@ -41,7 +41,7 @@ cd fin-management-for-car-rental
 python -m venv venv
 venv\Scripts\activate
 ```
-### 3. Install Dependencies
+### 3. Install Depedencies
 ```
 pip install -r requirements.txt
 ```
