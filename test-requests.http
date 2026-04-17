@@ -1,0 +1,310 @@
+@baseUrl = http://localhost:8000
+
+###############################################################
+# ORGANIZATION — POST /organizations/
+###############################################################
+
+# ✅ SUKSES: Data valid
+# Ekspektasi: 200 OK, kembalikan data organisasi baru
+POST {{baseUrl}}/organizations/
+Content-Type: application/json
+
+{
+  "organization_name": "Rental Mobil Nusantara",
+  "organization_code": "RMN-001"
+}
+
+###
+
+# ✅ SUKSES: Kode dengan underscore dan angka
+# Ekspektasi: 200 OK
+POST {{baseUrl}}/organizations/
+Content-Type: application/json
+
+{
+  "organization_name": "CV Maju Jaya",
+  "organization_code": "CV_MAJU_01"
+}
+
+###
+
+# ❌ GAGAL: Kode organisasi sudah dipakai (duplicate)
+# Ekspektasi: 400 Bad Request — "kode organisasi sudah ada"
+POST {{baseUrl}}/organizations/
+Content-Type: application/json
+
+{
+  "organization_name": "Duplikat Rental",
+  "organization_code": "RMN-001"
+}
+
+###
+
+# ❌ GAGAL: Nama organisasi terlalu pendek (< 2 karakter)
+# Ekspektasi: 422 Unprocessable Entity — "Nama organisasi minimal 2 karakter"
+POST {{baseUrl}}/organizations/
+Content-Type: application/json
+
+{
+  "organization_name": "A",
+  "organization_code": "ORG-TEST"
+}
+
+###
+
+# ❌ GAGAL: Nama organisasi terlalu panjang (> 100 karakter)
+# Ekspektasi: 422 Unprocessable Entity — "Nama organisasi maksimal 100 karakter"
+POST {{baseUrl}}/organizations/
+Content-Type: application/json
+
+{
+  "organization_name": "Perusahaan Rental Mobil Sangat Besar Yang Nama Perusahaannya Benar Benar Sangat Panjang Sekali Ini Tidak Valid Ya",
+  "organization_code": "ORG-PANJANG"
+}
+
+###
+
+# ❌ GAGAL: Kode organisasi mengandung spasi (karakter tidak valid)
+# Ekspektasi: 422 Unprocessable Entity — "Kode organisasi hanya boleh huruf, angka, underscore, atau dash"
+POST {{baseUrl}}/organizations/
+Content-Type: application/json
+
+{
+  "organization_name": "Rental Spasi",
+  "organization_code": "ORG SPASI"
+}
+
+###
+
+# ❌ GAGAL: Kode organisasi terlalu pendek (< 2 karakter)
+# Ekspektasi: 422 Unprocessable Entity
+POST {{baseUrl}}/organizations/
+Content-Type: application/json
+
+{
+  "organization_name": "Rental Pendek",
+  "organization_code": "X"
+}
+
+###
+
+# ❌ GAGAL: Kode organisasi terlalu panjang (> 20 karakter)
+# Ekspektasi: 422 Unprocessable Entity
+POST {{baseUrl}}/organizations/
+Content-Type: application/json
+
+{
+  "organization_name": "Rental Panjang Code",
+  "organization_code": "KODE_YANG_SANGAT_PANJANG_BANGET"
+}
+
+###
+
+# ❌ GAGAL: Field wajib tidak dikirim (organization_code kosong)
+# Ekspektasi: 422 Unprocessable Entity — field required
+POST {{baseUrl}}/organizations/
+Content-Type: application/json
+
+{
+  "organization_name": "Tanpa Kode"
+}
+
+###
+
+###############################################################
+# USER REGISTER — POST /register/
+###############################################################
+
+# ✅ SUKSES: Data user lengkap dan valid
+# Ganti organization_id dengan UUID yang sudah ada di DB
+# Ekspektasi: 200 OK, kembalikan data user baru
+POST {{baseUrl}}/register/
+Content-Type: application/json
+
+{
+  "username": "budi_admin",
+  "email": "budi@rentalku.com",
+  "password": "Secret123",
+  "role": "admin",
+  "organization_id": "00000000-0000-0000-0000-000000000001"
+}
+
+###
+
+# ✅ SUKSES: Role staff
+# Ekspektasi: 200 OK
+POST {{baseUrl}}/register/
+Content-Type: application/json
+
+{
+  "username": "siti_staff",
+  "email": "siti@rentalku.com",
+  "password": "Passw0rd",
+  "role": "staff",
+  "organization_id": "00000000-0000-0000-0000-000000000001"
+}
+
+###
+
+# ❌ GAGAL: Email sudah terdaftar
+# Ekspektasi: 400 Bad Request — "Email atau Username sudah terdaftar"
+POST {{baseUrl}}/register/
+Content-Type: application/json
+
+{
+  "username": "budi_baru",
+  "email": "budi@rentalku.com",
+  "password": "Secret123",
+  "role": "admin",
+  "organization_id": "00000000-0000-0000-0000-000000000001"
+}
+
+###
+
+# ❌ GAGAL: Username sudah dipakai
+# Ekspektasi: 400 Bad Request — "Email atau Username sudah terdaftar"
+POST {{baseUrl}}/register/
+Content-Type: application/json
+
+{
+  "username": "budi_admin",
+  "email": "budi_lain@rentalku.com",
+  "password": "Secret123",
+  "role": "staff",
+  "organization_id": "00000000-0000-0000-0000-000000000001"
+}
+
+###
+
+# ❌ GAGAL: Organization ID tidak ditemukan di DB
+# Ekspektasi: 404 Not Found — "Organisasi tidak ditemukan"
+POST {{baseUrl}}/register/
+Content-Type: application/json
+
+{
+  "username": "coba_user",
+  "email": "coba@rentalku.com",
+  "password": "Secret123",
+  "role": "viewer",
+  "organization_id": "ffffffff-ffff-ffff-ffff-ffffffffffff"
+}
+
+###
+
+# ❌ GAGAL: Password terlalu pendek (< 8 karakter)
+# Ekspektasi: 422 Unprocessable Entity — "Password minimal 8 karakter"
+POST {{baseUrl}}/register/
+Content-Type: application/json
+
+{
+  "username": "user_pass_pendek",
+  "email": "pendek@rentalku.com",
+  "password": "Ab1",
+  "role": "staff",
+  "organization_id": "00000000-0000-0000-0000-000000000001"
+}
+
+###
+
+# ❌ GAGAL: Password tanpa huruf kapital
+# Ekspektasi: 422 Unprocessable Entity — "Password harus mengandung minimal 1 huruf kapital"
+POST {{baseUrl}}/register/
+Content-Type: application/json
+
+{
+  "username": "user_no_caps",
+  "email": "nocaps@rentalku.com",
+  "password": "password123",
+  "role": "staff",
+  "organization_id": "00000000-0000-0000-0000-000000000001"
+}
+
+###
+
+# ❌ GAGAL: Password tanpa angka
+# Ekspektasi: 422 Unprocessable Entity — "Password harus mengandung minimal 1 angka"
+POST {{baseUrl}}/register/
+Content-Type: application/json
+
+{
+  "username": "user_no_number",
+  "email": "nonumber@rentalku.com",
+  "password": "PasswordTanpaAngka",
+  "role": "admin",
+  "organization_id": "00000000-0000-0000-0000-000000000001"
+}
+
+###
+
+# ❌ GAGAL: Username mengandung spasi
+# Ekspektasi: 422 Unprocessable Entity — "Username hanya boleh huruf, angka, dan underscore"
+POST {{baseUrl}}/register/
+Content-Type: application/json
+
+{
+  "username": "budi admin",
+  "email": "spasi@rentalku.com",
+  "password": "Secret123",
+  "role": "staff",
+  "organization_id": "00000000-0000-0000-0000-000000000001"
+}
+
+###
+
+# ❌ GAGAL: Username terlalu pendek (< 3 karakter)
+# Ekspektasi: 422 Unprocessable Entity
+POST {{baseUrl}}/register/
+Content-Type: application/json
+
+{
+  "username": "ab",
+  "email": "ab@rentalku.com",
+  "password": "Secret123",
+  "role": "viewer",
+  "organization_id": "00000000-0000-0000-0000-000000000001"
+}
+
+###
+
+# ❌ GAGAL: Format email tidak valid
+# Ekspektasi: 422 Unprocessable Entity — email validation error
+POST {{baseUrl}}/register/
+Content-Type: application/json
+
+{
+  "username": "email_salah",
+  "email": "ini-bukan-email",
+  "password": "Secret123",
+  "role": "staff",
+  "organization_id": "00000000-0000-0000-0000-000000000001"
+}
+
+###
+
+# ❌ GAGAL: Role tidak valid (bukan admin/staff/viewer)
+# Ekspektasi: 422 Unprocessable Entity — "Role tidak valid. Pilihan: admin, staff, viewer"
+POST {{baseUrl}}/register/
+Content-Type: application/json
+
+{
+  "username": "role_asal",
+  "email": "role@rentalku.com",
+  "password": "Secret123",
+  "role": "superuser",
+  "organization_id": "00000000-0000-0000-0000-000000000001"
+}
+
+###
+
+# ❌ GAGAL: organization_id bukan UUID yang valid
+# Ekspektasi: 422 Unprocessable Entity — UUID parsing error
+POST {{baseUrl}}/register/
+Content-Type: application/json
+
+{
+  "username": "uuid_salah",
+  "email": "uuid@rentalku.com",
+  "password": "Secret123",
+  "role": "staff",
+  "organization_id": "ini-bukan-uuid"
+}
