@@ -22,6 +22,9 @@ from app.core.security import (
 )
 models.Base.metadata.create_all(bind=engine)
 
+
+from typing import List
+
 app = FastAPI(title="Fin-Management API", version="1.0.0")
 
 # ── Global Response Formatter ────────────────────────────────────
@@ -80,6 +83,13 @@ def read_root():
     return {"test"}
 
 
+
+# GET: List all organizations
+@app.get("/organizations/", response_model=List[schemas.OrganizationResponse])
+def list_organizations(db: Session = Depends(get_db)):
+    return db.query(models.Organization).all()
+
+# POST: Create new organization
 @app.post("/organizations/", response_model=schemas.OrganizationResponse)
 def create_organization(org: schemas.OrganizationCreate, db: Session = Depends(get_db)):
     db_org = (
