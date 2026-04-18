@@ -85,12 +85,12 @@ def read_root():
 
 
 # GET: List all organizations
-@app.get("/organizations/", response_model=List[schemas.OrganizationResponse])
+@app.get("/organizations", response_model=List[schemas.OrganizationResponse])
 def list_organizations(db: Session = Depends(get_db)):
     return db.query(models.Organization).all()
 
 # POST: Create new organization
-@app.post("/organizations/", response_model=schemas.OrganizationResponse)
+@app.post("/organizations", response_model=schemas.OrganizationResponse)
 def create_organization(org: schemas.OrganizationCreate, db: Session = Depends(get_db)):
     db_org = (
         db.query(models.Organization)
@@ -111,7 +111,7 @@ def create_organization(org: schemas.OrganizationCreate, db: Session = Depends(g
     return new_org
 
 
-@app.post("/register/", response_model=schemas.UserResponse)
+@app.post("/register", response_model=schemas.UserResponse)
 def register_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
     db_user = (
         db.query(models.User)
@@ -151,7 +151,7 @@ def register_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
     return new_user
 
 
-@app.post("/login/")
+@app.post("/login")
 def login_user(credentials: schemas.LoginRequest, db: Session = Depends(get_db)):
     user = db.query(models.User).filter(models.User.email == credentials.email).first()
 
@@ -220,7 +220,7 @@ def get_current_user(
  
     return user
 
-@app.post("/logout/", response_model=schemas.LogoutResponse)
+@app.post("/logout", response_model=schemas.LogoutResponse)
 def logout_user(
     token: str = Depends(oauth2_scheme),
     current_user: models.User = Depends(get_current_user),
