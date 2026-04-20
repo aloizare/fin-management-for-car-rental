@@ -7,12 +7,11 @@ from starlette.responses import Response as StarletteResponse
 
 from app.db import models
 from app.db.database import engine
-from app.routers import auth, organization
+from app.routers import auth, organization, transaction
 
 models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="Fin-Management API", version="1.0.0")
-
 
 class StandardResponseMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
@@ -73,8 +72,6 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
 app.include_router(auth.router)
 app.include_router(organization.router)
 app.include_router(transaction.router)
-app.include_router(auth.router)
-app.include_router(organization.router)
 
 @app.get("/")
 def read_root():
