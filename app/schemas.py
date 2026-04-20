@@ -1,6 +1,8 @@
 from pydantic import BaseModel, EmailStr, Field ,field_validator
 from uuid import UUID
-from datetime import datetime
+from datetime import datetime, date
+from decimal import Decimal
+from typing import List, Optional
 import re
 
 VALID_ROLES = {"admin", "staff", "viewer"}
@@ -93,3 +95,57 @@ class LoginRequest(BaseModel):
 class LogoutResponse(BaseModel):
     message: str
     logged_out_at: datetime
+
+class TransactionCreate(BaseModel):
+    amount: int
+    category: str
+    transaction_date: date
+    note: Optional[str] = None
+
+    @field_validator("transaction_date", mode="before")
+    @classmethod
+    def validate_transaction_date(cls, v):
+        if not isinstance(v, str):
+            raise ValueError("transaction_date harus berupa string")
+        try:
+            return datetime.strptime(v, "%d-%m-%Y").date()
+        except ValueError:
+            raise ValueError("Format transaction_date tidak valid, harus DD-MM-YYYY (contoh: 09-09-2000)")
+
+    @field_validator("amount", mode="before")
+    @classmethod
+    def validate_amount(cls, v):
+        if type(v) is not int:
+            raise ValueError("Amount harus berupa integer")
+        return v
+
+    @field_validator("category")
+    @classmethod
+    def validate_category(cls, v: str) -> str:
+        v = v.strip().lower()
+        if v not in {"in", "out"}:
+            raise ValueError("Kategori harus 'in' atau 'out'")
+        return v
+
+class TransactionResponse(BaseModel):
+    id: UUID
+    amount: Decimal
+    category: str
+    transaction_date: date
+    note: Optional[str]
+    organization_id: UUID
+    created_at: datetime
+
+    @field_validator("category", mode="before")
+    @classmethod
+    def convert_enum_to_str(cls, v):
+        return v.value if hasattr(v, "value") else str(v)
+
+    class Config:
+        from_attributes = True
+
+class PaginatedTransactionResponse(BaseModel):
+    items: List[TransactionResponse]
+    total: int
+    page: int
+    limit: int

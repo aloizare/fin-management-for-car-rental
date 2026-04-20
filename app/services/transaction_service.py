@@ -13,6 +13,7 @@ from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, 
 from reportlab.lib.styles import getSampleStyleSheet
 
 from app.db import models
+from app import schemas
 
 def _validate_row(row: dict, row_num: int) -> dict:
     errors = []
@@ -31,11 +32,11 @@ def _validate_row(row: dict, row_num: int) -> dict:
 
     raw_date = str(row.get("transaction_date", "")).strip()
     try:
-        transaction_date = date.fromisoformat(raw_date)
+        transaction_date = datetime.strptime(raw_date, "%d-%m-%Y").date()
         if transaction_date > date.today():
             errors.append(f"Baris {row_num}: transaction_date tidak boleh lebih dari hari ini")
     except ValueError:
-        errors.append(f"Baris {row_num}: transaction_date tidak valid (format: YYYY-MM-DD)")
+        errors.append(f"Baris {row_num}: transaction_date tidak valid (format: DD-MM-YYYY)")
         transaction_date = None
 
     # note opsional
@@ -227,3 +228,39 @@ def _get_transactions(
         query = query.filter(models.Transaction.transaction_date <= end_date)
 
     return query.order_by(models.Transaction.transaction_date.desc()).all()
+
+def create_transaction(
+    db: Session,
+    tx_data: schemas.TransactionCreate,
+    organization_id: str
+) -> models.Transaction:
+    org = db.query(models.Organization).filter(models.Organization.id == organization_id).first()
+    if not org:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Organisasi tidak ditemukan")
+
+    db_transaction = models.Transaction(
+        amount=tx_data.amount,
+        category=models.TransactionCategory(tx_data.category),
+        transaction_date=tx_data.transaction_date,
+        note=tx_data.note,
+        organization_id=organization_id,
+    )
+    db.add(db_transaction)
+    db.commit()
+    db.refresh(db_transaction)
+    return db_transaction
+
+def get_paginated_transactions(
+    db: Session,
+    organization_id: str,
+    page: int = 1,
+    limit: int = 10
+):
+    skip = (page - 1) * limit
+    query = db.query(models.Transaction).filter(
+        models.Transaction.organization_id == organization_id,
+        models.Transaction.deleted_at == None
+    )
+    total = query.count()
+    transactions = query.order_by(models.Transaction.transaction_date.desc()).offset(skip).limit(limit).all()
+    return transactions, total

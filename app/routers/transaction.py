@@ -9,9 +9,50 @@ import io
 from app.db import models
 from app.db.database import get_db
 from app.routers.auth import authenticated_user
-from app.services.transaction_service import bulk_upload_csv, export_csv, export_pdf
+from app import schemas
+from app.services.transaction_service import (
+    bulk_upload_csv,
+    export_csv,
+    export_pdf,
+    create_transaction,
+    get_paginated_transactions
+)
 
 router = APIRouter(prefix="/transactions", tags=["Transaction"])
+
+
+@router.post("/", response_model=schemas.TransactionResponse)
+def create_new_transaction(
+    tx_data: schemas.TransactionCreate,
+    current_user: models.User = Depends(authenticated_user),
+    db: Session = Depends(get_db),
+):
+    return create_transaction(
+        db=db,
+        tx_data=tx_data,
+        organization_id=str(current_user.organization_id)
+    )
+
+
+@router.get("/", response_model=schemas.PaginatedTransactionResponse)
+def get_all_transactions(
+    page: int = Query(1, ge=1, description="Halaman ke-"),
+    limit: int = Query(10, ge=1, le=100, description="Jumlah data per halaman"),
+    current_user: models.User = Depends(authenticated_user),
+    db: Session = Depends(get_db),
+):
+    transactions, total = get_paginated_transactions(
+        db=db,
+        organization_id=str(current_user.organization_id),
+        page=page,
+        limit=limit
+    )
+    return {
+        "items": transactions,
+        "total": total,
+        "page": page,
+        "limit": limit
+    }
 
 
 @router.post("/bulk-upload")
