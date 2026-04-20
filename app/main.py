@@ -76,7 +76,13 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
     )
 # ─────────────────────────────────────────────────────────────────
 
+<<<<<<< Updated upstream
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/login/")
+=======
+app.include_router(auth.router)
+app.include_router(organization.router)
+app.include_router(transaction.router)
+>>>>>>> Stashed changes
 
 @app.get("/")
 def read_root():
