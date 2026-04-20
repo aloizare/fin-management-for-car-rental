@@ -72,6 +72,9 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
 
 app.include_router(auth.router)
 app.include_router(organization.router)
+app.include_router(transaction.router)
+app.include_router(auth.router)
+app.include_router(organization.router)
 
 @app.get("/")
 def read_root():
