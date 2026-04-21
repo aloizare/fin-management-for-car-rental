@@ -1,5 +1,6 @@
 from datetime import date
 from typing import Optional
+from uuid import UUID
 
 from fastapi import APIRouter, Depends, UploadFile, File, Query
 from fastapi.responses import StreamingResponse
@@ -15,7 +16,9 @@ from app.services.transaction_service import (
     export_csv,
     export_pdf,
     create_transaction,
-    get_paginated_transactions
+    get_paginated_transactions,
+    update_transaction,
+    soft_delete_transaction,
 )
 
 router = APIRouter(prefix="/transactions", tags=["Transaction"])
@@ -107,4 +110,30 @@ def download_pdf(
         io.BytesIO(pdf_bytes),
         media_type="application/pdf",
         headers={"Content-Disposition": f"attachment; filename={filename}"},
+    )
+
+@router.patch("/{transaction_id}", response_model=schemas.TransactionResponse)
+def update_transaction_by_id(
+    transaction_id: UUID,
+    transaction_data: schemas.TransactionUpdate,
+    current_user: models.User = Depends(authenticated_user),
+    db: Session = Depends(get_db),
+):
+    return update_transaction(
+        db=db,
+        transaction_id=str(transaction_id),
+        transaction_data=transaction_data,
+        organization_id=str(current_user.organization_id),
+    )
+
+@router.delete("/{transaction_id}", response_model=schemas.TransactionDeleteResponse)
+def delete_transaction_by_id(
+    transaction_id: UUID,
+    current_user: models.User = Depends(authenticated_user),
+    db: Session = Depends(get_db),
+):
+    return soft_delete_transaction(
+        db=db,
+        transaction_id=str(transaction_id),
+        organization_id=str(current_user.organization_id),
     )

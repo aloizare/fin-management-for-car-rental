@@ -149,3 +149,50 @@ class PaginatedTransactionResponse(BaseModel):
     total: int
     page: int
     limit: int
+
+class TransactionUpdate(BaseModel):
+    amount: Optional[int] = None
+    category: Optional[str] = None
+    transaction_date: Optional[date] = None
+    note: Optional[str] = None
+
+    @field_validator("transaction_date", mode="before")
+    @classmethod
+    def validate_transaction_date(cls, v):
+        if v is None:
+            return v
+        if isinstance(v, date):
+            return v
+        if not isinstance(v, str):
+            raise ValueError("transaction_date harus berupa string")
+        try:
+            return datetime.strptime(v, "%d-%m-%Y").date()
+        except ValueError:
+            raise ValueError(
+                "Format transaction_date tidak valid, harus DD-MM-YYY (contoh: 02-02-2000)"
+            )
+        
+    @field_validator("amount", mode="before")
+    @classmethod
+    def validate_amount(cls, v):
+        if v is None:
+            return v
+        if type(v) is not int:
+            raise ValueError("Amount harus berupa integer")
+        if v <= 0:
+            raise ValueError("Amount harus lebih dari 0")
+        return v
+        
+    @field_validator("category")
+    @classmethod
+    def validate_category(cls, v:str) -> str:
+        if v is None:
+            return v
+        v = v.strip().lower()
+        if v not in {"in", "out"}:
+            raise ValueError("Kategori harus 'in' atau 'out'")
+        return v
+        
+class TransactionDeleteResponse(BaseModel):
+    message: str
+    deleted_at: datetime
