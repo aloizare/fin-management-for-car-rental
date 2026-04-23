@@ -264,3 +264,79 @@ def get_paginated_transactions(
     total = query.count()
     transactions = query.order_by(models.Transaction.transaction_date.desc()).offset(skip).limit(limit).all()
     return transactions, total
+
+def _get_owned_transaction(
+    db: Session,
+    organization_id: str,
+    transaction_id:str,
+) -> models.Transaction:
+    transaction = (
+        db.query(models.Transaction)
+        .filter(
+            models.Transaction.id == transaction_id,
+            models.Transaction.organization_id == organization_id,
+            models.Transaction.deleted_at == None,
+        )
+        .first()
+    )
+    if not transaction:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Transaksi tidak ditemukan",
+        )
+    return transaction
+
+def update_transaction(
+    db: Session,
+    transaction_id: str,
+    transaction_data: schemas.TransactionUpdate,
+    organization_id: str,
+) -> models.Transaction:
+    transaction = _get_owned_transaction(
+        db=db,
+        organization_id=organization_id,
+        transaction_id=transaction_id,
+    )
+
+    payload = transaction_data.model_dump(exclude_unset=True)
+
+    if not payload:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Tidak ada data yang diubah"
+        )
+    
+    if "amount" in payload:
+        transaction.amount = payload["amount"]
+
+    if "category" in payload:
+        transaction.category = models.TransactionCategory(payload["category"])
+
+    if "transaction_date" in payload:
+        transaction.transaction_date = payload["transaction_date"]
+
+    if "note" in payload:
+        transaction.note = payload["note"]
+
+    db.commit()
+    db.refresh(transaction)
+    return transaction
+
+def soft_delete_transaction(
+    db: Session,
+    transaction_id: str,
+    organization_id: str,
+) -> dict:
+    transaction = _get_owned_transaction(
+        db=db,
+        organization_id=organization_id,
+        transaction_id=transaction_id,
+    )
+
+    transaction.deleted_at = datetime.utcnow()
+    db.commit()
+
+    return {
+        "message": "Transaksi berhasil dihapus",
+        "deleted_at": transaction.deleted_at,
+    }
