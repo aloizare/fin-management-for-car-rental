@@ -99,24 +99,16 @@ class LogoutResponse(BaseModel):
 class TransactionCreate(BaseModel):
     amount: int
     category: str
-    transaction_date: date
+    transaction_date: str
     note: Optional[str] = None
 
-    @field_validator("transaction_date", mode="before")
-    @classmethod
-    def validate_transaction_date(cls, v):
-        if not isinstance(v, str):
-            raise ValueError("transaction_date harus berupa string")
-        try:
-            return datetime.strptime(v, "%d-%m-%Y").date()
-        except ValueError:
-            raise ValueError("Format transaction_date tidak valid, harus DD-MM-YYYY (contoh: 09-09-2000)")
-
-    @field_validator("amount", mode="before")
+    @field_validator("amount")
     @classmethod
     def validate_amount(cls, v):
-        if type(v) is not int:
-            raise ValueError("Amount harus berupa integer")
+        if not isinstance(v, int):
+            raise ValueError("Jumlah transaksi harus berupa angka bulat positif")
+        if v <= 0:
+            raise ValueError("Jumlah transaksi harus positif")
         return v
 
     @field_validator("category")
@@ -124,17 +116,37 @@ class TransactionCreate(BaseModel):
     def validate_category(cls, v: str) -> str:
         v = v.strip().lower()
         if v not in {"in", "out"}:
-            raise ValueError("Kategori harus 'in' atau 'out'")
+            raise ValueError("Pilih kategori pemasukan atau pengeluaran")
+        return v
+
+    @field_validator("transaction_date")
+    @classmethod
+    def validate_transaction_date(cls, v: str) -> str:
+        if not isinstance(v, str):
+            raise ValueError("Tanggal tidak boleh kosong dan harus format YYYY-MM-DD")
+        try:
+            dt = datetime.strptime(v, "%Y-%m-%d").date()
+        except ValueError:
+            raise ValueError("Format tanggal tidak valid, gunakan YYYY-MM-DD")
+        if dt > date.today():
+            raise ValueError("Tanggal tidak boleh lebih besar dari hari ini")
         return v
 
 class TransactionResponse(BaseModel):
     id: UUID
-    amount: Decimal
+    amount: int
     category: str
     transaction_date: date
     note: Optional[str]
     organization_id: UUID
     created_at: datetime
+
+    @field_validator("amount", mode="before")
+    @classmethod
+    def coerce_amount_to_int(cls, v):
+        if isinstance(v, Decimal):
+            return int(v)
+        return int(v)
 
     @field_validator("category", mode="before")
     @classmethod
