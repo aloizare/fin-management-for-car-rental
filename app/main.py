@@ -7,7 +7,7 @@ from starlette.responses import Response as StarletteResponse
 
 from app.db import models
 from app.db.database import engine
-from app.routers import auth, organization, transaction
+from app.routers import auth, organization, transaction, dashboard
 
 models.Base.metadata.create_all(bind=engine)
 
@@ -69,9 +69,11 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
         content={"success": False, "server_message": message},
     )
 
+
 app.include_router(auth.router)
 app.include_router(organization.router)
 app.include_router(transaction.router)
+app.include_router(dashboard.router)
 
 @app.get("/")
 def read_root():

@@ -238,10 +238,22 @@ def create_transaction(
     if not org:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Organisasi tidak ditemukan")
 
+    # Validasi ulang (defensive, walau sudah divalidasi Pydantic)
+    if tx_data.amount is None or tx_data.amount <= 0:
+        raise HTTPException(status_code=422, detail="Jumlah transaksi harus positif")
+    if tx_data.category not in ("in", "out"):
+        raise HTTPException(status_code=422, detail="Pilih kategori pemasukan atau pengeluaran")
+    try:
+        trx_date = datetime.strptime(tx_data.transaction_date, "%Y-%m-%d").date()
+    except Exception:
+        raise HTTPException(status_code=422, detail="Format tanggal tidak valid, gunakan YYYY-MM-DD")
+    if trx_date > date.today():
+        raise HTTPException(status_code=422, detail="Tanggal tidak boleh lebih besar dari hari ini")
+
     db_transaction = models.Transaction(
         amount=tx_data.amount,
         category=models.TransactionCategory(tx_data.category),
-        transaction_date=tx_data.transaction_date,
+        transaction_date=trx_date,
         note=tx_data.note,
         organization_id=organization_id,
     )
