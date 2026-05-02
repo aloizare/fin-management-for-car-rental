@@ -14,6 +14,7 @@ from reportlab.lib.styles import getSampleStyleSheet
 
 from app.db import models
 from app import schemas
+from app.services.data_preparation_service import prepare_transaction_data
 
 def _validate_row(row: dict, row_num: int) -> dict:
     errors = []
@@ -351,4 +352,30 @@ def soft_delete_transaction(
     return {
         "message": "Transaksi berhasil dihapus",
         "deleted_at": transaction.deleted_at,
+    }
+
+def get_monthly_profit_report(db, organization_id, start_date=None, end_date=None):
+    data = prepare_transaction_data(
+        organization_id=organization_id,
+        db=db,
+        start_date=start_date,
+        end_date=end_date
+    )
+
+    items = []
+    for _, value in data["monthly"].items():
+        items.append({
+            "month": value["month"],
+            "year": value["year"],
+            "month_number": value["month_number"],
+            "total_income": float(value["total_income"]),
+            "total_expense": float(value["total_expense"]),
+            "profit": float(value["profit"]),
+        })
+
+    return {
+        "items": items,
+        "total_income": float(data["total_income"]),
+        "total_expense": float(data["total_expense"]),
+        "profit": float(data["profit"]),
     }

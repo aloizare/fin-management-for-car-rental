@@ -208,3 +208,18 @@ class TransactionUpdate(BaseModel):
 class TransactionDeleteResponse(BaseModel):
     message: str
     deleted_at: datetime
+
+class MonthlyProfitItem(BaseModel):
+    month: str
+    year: int
+    month_number: int
+    total_income: float
+    total_expense: float
+    profit: float
+
+
+class MonthlyProfitResponse(BaseModel):
+    items: list[MonthlyProfitItem]
+    total_income: float
+    total_expense: float
+    profit: float
