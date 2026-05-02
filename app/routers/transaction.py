@@ -19,6 +19,7 @@ from app.services.transaction_service import (
     get_paginated_transactions,
     update_transaction,
     soft_delete_transaction,
+    get_monthly_profit_report,
 )
 
 router = APIRouter(prefix="/transactions", tags=["Transaction"])
@@ -136,4 +137,18 @@ def delete_transaction_by_id(
         db=db,
         transaction_id=str(transaction_id),
         organization_id=str(current_user.organization_id),
+    )
+
+@router.get("/analysis/monthly-profit", response_model=schemas.MonthlyProfitResponse)
+def monthly_profit(
+    start_date: Optional[date] = Query(None),
+    end_date: Optional[date] = Query(None),
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(authenticated_user),
+):
+    return get_monthly_profit_report(
+        db=db,
+        organization_id=str(current_user.organization_id),
+        start_date=start_date,
+        end_date=end_date,
     )
