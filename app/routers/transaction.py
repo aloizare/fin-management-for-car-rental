@@ -25,7 +25,7 @@ from app.services.transaction_service import (
 router = APIRouter(prefix="/transactions", tags=["Transaction"])
 
 
-@router.post("/", response_model=schemas.TransactionResponse)
+@router.post("", response_model=schemas.TransactionResponse)
 def create_new_transaction(
     tx_data: schemas.TransactionCreate,
     current_user: models.User = Depends(authenticated_user),
@@ -38,7 +38,7 @@ def create_new_transaction(
     )
 
 
-@router.get("/", response_model=schemas.PaginatedTransactionResponse)
+@router.get("", response_model=schemas.PaginatedTransactionResponse)
 def get_all_transactions(
     page: int = Query(1, ge=1, description="Halaman ke-"),
     limit: int = Query(10, ge=1, le=100, description="Jumlah data per halaman"),
