@@ -11,7 +11,7 @@ from app.routers import auth, organization, transaction
 
 models.Base.metadata.create_all(bind=engine)
 
-app = FastAPI(title="Fin-Management API", version="1.0.0")
+app = FastAPI(title="Fin-Management API", version="1.0.0", redirect_slashes=False)
 
 class StandardResponseMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
