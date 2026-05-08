@@ -178,11 +178,9 @@ class TransactionUpdate(BaseModel):
         if not isinstance(v, str):
             raise ValueError("transaction_date harus berupa string")
         try:
-            return datetime.strptime(v, "%d-%m-%Y").date()
+            return datetime.strptime(v, "%Y-%m-%d").date()
         except ValueError:
-            raise ValueError(
-                "Format transaction_date tidak valid, harus DD-MM-YYY (contoh: 02-02-2000)"
-            )
+            raise ValueError("Format transaction_date tidak valid, gunakan YYYY-MM-DD")
         
     @field_validator("amount", mode="before")
     @classmethod
