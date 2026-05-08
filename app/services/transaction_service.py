@@ -319,14 +319,27 @@ def update_transaction(
             detail="Tidak ada data yang diubah"
         )
     
+
     if "amount" in payload:
+        if payload["amount"] is None or payload["amount"] <= 0:
+            raise HTTPException(status_code=422, detail="Jumlah transaksi harus positif")
         transaction.amount = payload["amount"]
 
     if "category" in payload:
+        if payload["category"] not in ("in", "out"):
+            raise HTTPException(status_code=422, detail="Pilih kategori pemasukan atau pengeluaran")
         transaction.category = models.TransactionCategory(payload["category"])
 
     if "transaction_date" in payload:
-        transaction.transaction_date = payload["transaction_date"]
+        trx_date = payload["transaction_date"]
+        if isinstance(trx_date, str):
+            try:
+                trx_date = datetime.strptime(trx_date, "%Y-%m-%d").date()
+            except Exception:
+                raise HTTPException(status_code=422, detail="Format tanggal tidak valid, gunakan YYYY-MM-DD")
+        if trx_date > date.today():
+            raise HTTPException(status_code=422, detail="Tanggal tidak boleh lebih besar dari hari ini")
+        transaction.transaction_date = trx_date
 
     if "note" in payload:
         transaction.note = payload["note"]
