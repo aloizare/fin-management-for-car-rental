@@ -3,7 +3,7 @@ from typing import Optional
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, UploadFile, File, Query
-from fastapi.responses import StreamingResponse
+from fastapi.responses import StreamingResponse, JSONResponse
 from sqlalchemy.orm import Session
 import io
 
@@ -20,6 +20,7 @@ from app.services.transaction_service import (
     update_transaction,
     soft_delete_transaction,
     get_monthly_profit_report,
+    predict_next_month_income,
 )
 
 router = APIRouter(prefix="/transactions", tags=["Transaction"])
@@ -37,6 +38,16 @@ def create_new_transaction(
         organization_id=str(current_user.organization_id)
     )
 
+@router.get("/predict-income")
+def predict_income_next_month(
+    current_user: models.User = Depends(authenticated_user),
+    db: Session = Depends(get_db),
+):
+    result = predict_next_month_income(
+        db=db,
+        organization_id=str(current_user.organization_id)
+    )
+    return JSONResponse(content=result)
 
 @router.get("", response_model=schemas.PaginatedTransactionResponse)
 def get_all_transactions(

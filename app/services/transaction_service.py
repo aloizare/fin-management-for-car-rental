@@ -6,15 +6,104 @@ from typing import Optional
 
 from fastapi import HTTPException, UploadFile, status
 from sqlalchemy.orm import Session
+from statistics import mean, stdev
 from reportlab.lib.pagesizes import A4
 from reportlab.lib import colors
 from reportlab.lib.units import cm
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
 from reportlab.lib.styles import getSampleStyleSheet
-
+from sklearn.linear_model import LinearRegression
+import numpy as np
+from app.services.data_preparation_service import prepare_transaction_data
 from app.db import models
 from app import schemas
 from app.services.data_preparation_service import prepare_transaction_data
+
+def predict_next_month_income(db: Session, organization_id: str):
+    data = prepare_transaction_data(organization_id=organization_id, db=db)
+    monthly = data["monthly"]
+
+    if not monthly:
+        return {"error": "No transaction data found","predict_available" : False}
+
+    months = sorted(monthly.keys())
+
+    income_data = []
+    for key in months:
+        total_income = float(monthly[key]["total_income"])
+        if total_income < 0 or total_income > 1_000_000_000_000:
+            continue
+        income_data.append({"month": key, "income": total_income})
+
+    if len(income_data) < 2:
+        return {"error": "Not enough valid data to predict"}
+
+    incomes = [item["income"] for item in income_data]
+
+    # ✅ Filter outlier dengan Z-score sebelum prediksi
+    if len(incomes) >= 3:
+        avg = mean(incomes)
+        sd = stdev(incomes)
+        if sd > 0:
+            incomes_filtered = [
+                v for v in incomes
+                if abs((v - avg) / sd) < 2.5  # buang yang > 2.5 std dev
+            ]
+            if len(incomes_filtered) >= 2:
+                incomes = incomes_filtered
+
+    # ✅ Cek apakah data kontinu (max gap 2 bulan)
+    from datetime import datetime
+    months_list = [item["month"] for item in income_data]
+    gaps = []
+    for i in range(1, len(months_list)):
+        d1 = datetime.strptime(months_list[i-1], "%Y-%m")
+        d2 = datetime.strptime(months_list[i], "%Y-%m")
+        gap = (d2.year - d1.year) * 12 + (d2.month - d1.month)
+        gaps.append(gap)
+
+    has_large_gap = any(g > 2 for g in gaps)
+
+    # ✅ Gunakan Linear Regression jika data cukup & kontinu
+    method = "moving_average_last_3_months"
+    if len(incomes) >= 4 and not has_large_gap:
+        X = np.array(range(len(incomes))).reshape(-1, 1)
+        y = np.array(incomes)
+        model = LinearRegression().fit(X, y)
+        predicted_income = float(model.predict([[len(incomes)]])[0])
+        method = "linear_regression"
+    else:
+        # Fallback: moving average 3 bulan terakhir
+        recent = incomes[-3:]
+        predicted_income = mean(recent)
+        if has_large_gap:
+            method = "moving_average_fallback_gap_detected"
+
+    predicted_income = max(0, predicted_income)  # income tidak boleh negatif
+
+    last_income = incomes[-1]
+    percentage_change = (
+        ((predicted_income - last_income) / last_income) * 100
+        if last_income != 0 else 0
+    )
+
+    # Hitung next month
+    last_month_str = income_data[-1]["month"]
+    last_date = datetime.strptime(last_month_str, "%Y-%m")
+    if last_date.month == 12:
+        next_month = f"{last_date.year + 1}-01"
+    else:
+        next_month = f"{last_date.year}-{last_date.month + 1:02d}"
+
+    return {
+        "months": [item["month"] for item in income_data],
+        "income_per_month": incomes,
+        "next_month": next_month,
+        "predicted_next_month_income": round(predicted_income, 2),
+        "trend_up": bool(predicted_income > last_income),
+        "percentage_change": round(percentage_change, 2),
+        "predict_available" : True
+    }
 
 def _validate_row(row: dict, row_num: int) -> dict:
     errors = []

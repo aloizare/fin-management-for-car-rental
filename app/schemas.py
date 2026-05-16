@@ -221,3 +221,10 @@ class MonthlyProfitResponse(BaseModel):
     total_income: float
     total_expense: float
     profit: float
+
+class IncomePredictionResponse(BaseModel):
+    next_month: str
+    next_year: int
+    predicted_income: float
+    historical_data_points: int
+    equation: str

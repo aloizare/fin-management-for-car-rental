@@ -1,0 +1,30 @@
+-- Organization ID untuk skenario naik
+-- org_up = 'ca5196b5-479b-4559-8f44-867d053d7fc5'
+
+INSERT INTO transactions (id, amount, category, transaction_date, note, organization_id, created_at, updated_at) VALUES
+  (gen_random_uuid(), 10000000,  'IN', '2025-07-08', 'Income Jul', 'ca5196b5-479b-4559-8f44-867d053d7fc5', now(), now()),
+  (gen_random_uuid(), 10500000,  'IN', '2025-07-21', 'Income Jul', 'ca5196b5-479b-4559-8f44-867d053d7fc5', now(), now()),
+
+  (gen_random_uuid(), 11000000,  'IN', '2025-08-05', 'Income Aug', 'ca5196b5-479b-4559-8f44-867d053d7fc5', now(), now()),
+  (gen_random_uuid(), 11800000,  'IN', '2025-08-20', 'Income Aug', 'ca5196b5-479b-4559-8f44-867d053d7fc5', now(), now()),
+
+  (gen_random_uuid(), 12500000,  'IN', '2025-09-10', 'Income Sep', 'ca5196b5-479b-4559-8f44-867d053d7fc5', now(), now()),
+  (gen_random_uuid(), 13000000,  'IN', '2025-09-25', 'Income Sep', 'ca5196b5-479b-4559-8f44-867d053d7fc5', now(), now()),
+
+  (gen_random_uuid(), 14000000,  'IN', '2025-10-07', 'Income Oct', 'ca5196b5-479b-4559-8f44-867d053d7fc5', now(), now()),
+  (gen_random_uuid(), 14500000,  'IN', '2025-10-22', 'Income Oct', 'ca5196b5-479b-4559-8f44-867d053d7fc5', now(), now()),
+
+  (gen_random_uuid(), 15500000,  'IN', '2025-11-11', 'Income Nov', 'ca5196b5-479b-4559-8f44-867d053d7fc5', now(), now()),
+  (gen_random_uuid(), 16000000,  'IN', '2025-11-28', 'Income Nov', 'ca5196b5-479b-4559-8f44-867d053d7fc5', now(), now()),
+
+  (gen_random_uuid(), 17000000,  'IN', '2026-01-06', 'Income Jan', 'ca5196b5-479b-4559-8f44-867d053d7fc5', now(), now()),
+  (gen_random_uuid(), 17500000,  'IN', '2026-01-20', 'Income Jan', 'ca5196b5-479b-4559-8f44-867d053d7fc5', now(), now()),
+
+  (gen_random_uuid(), 18500000,  'IN', '2026-02-10', 'Income Feb', 'ca5196b5-479b-4559-8f44-867d053d7fc5', now(), now()),
+  (gen_random_uuid(), 19000000,  'IN', '2026-02-24', 'Income Feb', 'ca5196b5-479b-4559-8f44-867d053d7fc5', now(), now()),
+
+  (gen_random_uuid(), 20000000,  'IN', '2026-03-09', 'Income Mar', 'ca5196b5-479b-4559-8f44-867d053d7fc5', now(), now()),
+  (gen_random_uuid(), 20500000,  'IN', '2026-03-25', 'Income Mar', 'ca5196b5-479b-4559-8f44-867d053d7fc5', now(), now()),
+
+  (gen_random_uuid(), 21500000,  'IN', '2026-04-08', 'Income Apr', 'ca5196b5-479b-4559-8f44-867d053d7fc5', now(), now()),
+  (gen_random_uuid(), 22000000,  'IN', '2026-04-22', 'Income Apr', 'ca5196b5-479b-4559-8f44-867d053d7fc5', now(), now());
