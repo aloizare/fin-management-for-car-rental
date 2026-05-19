@@ -21,6 +21,7 @@ from app.services.transaction_service import (
     soft_delete_transaction,
     get_monthly_profit_report,
     get_daily_profit_report,
+    get_weekly_profit_report,
     predict_next_month_income,
 )
 
@@ -178,3 +179,27 @@ def daily_profit(
         start_date=start_date,
         end_date=end_date,
     )
+
+@router.get(
+    "/analysis/weekly-profit",
+    response_model=schemas.WeeklyProfitResponse,
+    summary="Weekly Profit",
+)
+def weekly_profit_transactions_analysis(
+    start_date: Optional[date] = Query(None),
+    end_date: Optional[date] = Query(None),
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(authenticated_user),
+):
+    result = get_weekly_profit_report(
+        organization_id=str(current_user.organization_id),
+        db=db,
+        start_date=start_date,
+        end_date=end_date,
+    )
+
+    return {
+        "success": True,
+        "server_message": "OK",
+        **result,
+    }
