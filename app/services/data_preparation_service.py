@@ -63,6 +63,60 @@ def prepare_transaction_data(
         "profit": grand_total_income - grand_total_expense,
     }
 
+def prepare_daily_transaction_data(
+    organization_id: str,
+    db: Session,
+    start_date: Optional[date] = None,
+    end_date: Optional[date] = None,
+) -> dict:
+    query = db.query(models.Transaction).filter(
+        models.Transaction.organization_id == organization_id,
+        models.Transaction.deleted_at == None,
+    )
+
+    if start_date:
+        query = query.filter(models.Transaction.transaction_date >= start_date)
+    if end_date:
+        query = query.filter(models.Transaction.transaction_date <= end_date)
+
+    transactions = query.order_by(models.Transaction.transaction_date.asc()).all()
+
+    daily = {}
+    grand_total_income = Decimal(0)
+    grand_total_expense = Decimal(0)
+
+    for t in transactions:
+        key = t.transaction_date.isoformat()  # YYYY-MM-DD
+
+        if key not in daily:
+            daily[key] = {
+                "date": key,
+                "income": [],
+                "expense": [],
+                "total_income": Decimal(0),
+                "total_expense": Decimal(0),
+                "profit": Decimal(0),
+            }
+
+        if t.category.value == "in":
+            daily[key]["income"].append(_format_transaction(t))
+            daily[key]["total_income"] += t.amount
+            grand_total_income += t.amount
+        else:
+            daily[key]["expense"].append(_format_transaction(t))
+            daily[key]["total_expense"] += t.amount
+            grand_total_expense += t.amount
+
+    for key in daily:
+        daily[key]["profit"] = daily[key]["total_income"] - daily[key]["total_expense"]
+
+    return {
+        "transactions": [_format_transaction(t) for t in transactions],
+        "daily": daily,
+        "total_income": grand_total_income,
+        "total_expense": grand_total_expense,
+        "profit": grand_total_income - grand_total_expense,
+    }
 
 def _format_transaction(t: models.Transaction) -> dict:
     return {
