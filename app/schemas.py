@@ -87,7 +87,6 @@ class UserResponse(BaseModel):
     class Config:
         from_attributes = True
 
-
 class LoginRequest(BaseModel):
     email: EmailStr
     password: str = Field(..., min_length=1)
@@ -229,6 +228,18 @@ class DailyProfitItem(BaseModel):
 
 class DailyProfitResponse(BaseModel):
     items: list[DailyProfitItem]
+    total_income: float
+    total_expense: float
+    profit: float
+
+class WeeklyProfitItem(BaseModel):
+    week: str
+    total_income: float
+    total_expense: float
+    profit: float
+
+class WeeklyProfitResponse(BaseModel):
+    items: list[WeeklyProfitItem]
     total_income: float
     total_expense: float
     profit: float

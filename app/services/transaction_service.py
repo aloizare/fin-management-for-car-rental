@@ -16,7 +16,7 @@ from sklearn.linear_model import LinearRegression
 import numpy as np
 from app.db import models
 from app import schemas
-from app.services.data_preparation_service import prepare_transaction_data, prepare_daily_transaction_data
+from app.services.data_preparation_service import prepare_transaction_data, prepare_daily_transaction_data, prepare_weekly_transaction_data
 
 def predict_next_month_income(db: Session, organization_id: str):
     data = prepare_transaction_data(organization_id=organization_id, db=db)
@@ -504,3 +504,16 @@ def get_daily_profit_report(db, organization_id, start_date=None, end_date=None)
         "total_expense": float(data["total_expense"]),
         "profit": float(data["profit"]),
     }
+
+def get_weekly_profit_report(
+    organization_id: str,
+    db: Session,
+    start_date: Optional[date] = None,
+    end_date: Optional[date] = None,
+):
+    return prepare_weekly_transaction_data(
+        organization_id=organization_id,
+        db=db,
+        start_date=start_date,
+        end_date=end_date,
+    )

@@ -118,6 +118,64 @@ def prepare_daily_transaction_data(
         "profit": grand_total_income - grand_total_expense,
     }
 
+def prepare_weekly_transaction_data(
+    organization_id: str,
+    db: Session,
+    start_date: Optional[date] = None,
+    end_date: Optional[date] = None,
+) -> dict:
+    query = db.query(models.Transaction).filter(
+        models.Transaction.organization_id == organization_id,
+        models.Transaction.deleted_at == None,
+    )
+
+    if start_date:
+        query = query.filter(models.Transaction.transaction_date >= start_date)
+
+    if end_date:
+        query = query.filter(models.Transaction.transaction_date <= end_date)
+
+    transactions = query.order_by(
+        models.Transaction.transaction_date.asc()
+    ).all()
+
+    weekly = {}
+    grand_total_income = Decimal(0)
+    grand_total_expense = Decimal(0)
+
+    for t in transactions:
+        iso_calendar = t.transaction_date.isocalendar()
+
+        key = f"{iso_calendar.year}-W{iso_calendar.week:02d}"
+
+        if key not in weekly:
+            weekly[key] = {
+                "week": key,
+                "total_income": Decimal(0),
+                "total_expense": Decimal(0),
+                "profit": Decimal(0),
+            }
+
+        if t.category.value.lower() == "in":
+            weekly[key]["total_income"] += t.amount
+            grand_total_income += t.amount
+        else:
+            weekly[key]["total_expense"] += t.amount
+            grand_total_expense += t.amount
+
+    for key in weekly:
+        weekly[key]["profit"] = (
+            weekly[key]["total_income"]
+            - weekly[key]["total_expense"]
+        )
+
+    return {
+        "items": list(weekly.values()),
+        "total_income": grand_total_income,
+        "total_expense": grand_total_expense,
+        "profit": grand_total_income - grand_total_expense,
+    }
+
 def _format_transaction(t: models.Transaction) -> dict:
     return {
         "id": str(t.id),
