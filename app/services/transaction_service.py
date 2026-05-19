@@ -14,10 +14,9 @@ from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, 
 from reportlab.lib.styles import getSampleStyleSheet
 from sklearn.linear_model import LinearRegression
 import numpy as np
-from app.services.data_preparation_service import prepare_transaction_data
 from app.db import models
 from app import schemas
-from app.services.data_preparation_service import prepare_transaction_data
+from app.services.data_preparation_service import prepare_transaction_data, prepare_daily_transaction_data
 
 def predict_next_month_income(db: Session, organization_id: str):
     data = prepare_transaction_data(organization_id=organization_id, db=db)
@@ -470,6 +469,30 @@ def get_monthly_profit_report(db, organization_id, start_date=None, end_date=Non
             "month": value["month"],
             "year": value["year"],
             "month_number": value["month_number"],
+            "total_income": float(value["total_income"]),
+            "total_expense": float(value["total_expense"]),
+            "profit": float(value["profit"]),
+        })
+
+    return {
+        "items": items,
+        "total_income": float(data["total_income"]),
+        "total_expense": float(data["total_expense"]),
+        "profit": float(data["profit"]),
+    }
+
+def get_daily_profit_report(db, organization_id, start_date=None, end_date=None):
+    data = prepare_daily_transaction_data(
+        organization_id=organization_id,
+        db=db,
+        start_date=start_date,
+        end_date=end_date,
+    )
+
+    items = []
+    for _, value in data["daily"].items():
+        items.append({
+            "date": value["date"],
             "total_income": float(value["total_income"]),
             "total_expense": float(value["total_expense"]),
             "profit": float(value["profit"]),

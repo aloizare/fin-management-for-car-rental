@@ -215,9 +215,20 @@ class MonthlyProfitItem(BaseModel):
     total_expense: float
     profit: float
 
-
 class MonthlyProfitResponse(BaseModel):
     items: list[MonthlyProfitItem]
+    total_income: float
+    total_expense: float
+    profit: float
+
+class DailyProfitItem(BaseModel):
+    date: str
+    total_income: float
+    total_expense: float
+    profit: float
+
+class DailyProfitResponse(BaseModel):
+    items: list[DailyProfitItem]
     total_income: float
     total_expense: float
     profit: float
