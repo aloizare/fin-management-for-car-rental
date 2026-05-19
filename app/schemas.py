@@ -250,3 +250,165 @@ class IncomePredictionResponse(BaseModel):
     predicted_income: float
     historical_data_points: int
     equation: str
+
+# --- Vehicle ---
+
+VALID_VEHICLE_STATUS = {"aktif", "tidak_aktif", "dalam_perawatan"}
+
+class VehicleCreate(BaseModel):
+    plat_nomor: str
+    merek: str
+    model: str
+    tahun: int
+    tarif_sewa: int
+    status: Optional[str] = "aktif"
+
+    @field_validator("plat_nomor")
+    @classmethod
+    def validate_plat_nomor(cls, v: str) -> str:
+        v = v.strip().upper()
+        if len(v) < 4 or len(v) > 15:
+            raise ValueError("Plat nomor harus antara 4 sampai 15 karakter")
+        return v
+
+    @field_validator("merek")
+    @classmethod
+    def validate_merek(cls, v: str) -> str:
+        v = v.strip()
+        if len(v) < 2:
+            raise ValueError("Merek kendaraan minimal 2 karakter")
+        return v
+
+    @field_validator("model")
+    @classmethod
+    def validate_model(cls, v: str) -> str:
+        v = v.strip()
+        if len(v) < 2:
+            raise ValueError("Model kendaraan minimal 2 karakter")
+        return v
+
+    @field_validator("tahun")
+    @classmethod
+    def validate_tahun(cls, v: int) -> int:
+        current_year = date.today().year
+        if v < 1990 or v > current_year:
+            raise ValueError(f"Tahun kendaraan harus antara 1990 dan {current_year}")
+        return v
+
+    @field_validator("tarif_sewa")
+    @classmethod
+    def validate_tarif_sewa(cls, v: int) -> int:
+        if v <= 0:
+            raise ValueError("Tarif sewa harus lebih dari 0")
+        return v
+
+    @field_validator("status")
+    @classmethod
+    def validate_status(cls, v: str) -> str:
+        v = v.strip().lower()
+        if v not in VALID_VEHICLE_STATUS:
+            raise ValueError(f"Status tidak valid. Pilihan: {', '.join(sorted(VALID_VEHICLE_STATUS))}")
+        return v
+
+class VehicleUpdate(BaseModel):
+    merek: Optional[str] = None
+    model: Optional[str] = None
+    tahun: Optional[int] = None
+    tarif_sewa: Optional[int] = None
+    status: Optional[str] = None
+
+    @field_validator("tahun", mode="before")
+    @classmethod
+    def validate_tahun(cls, v):
+        if v is None:
+            return v
+        current_year = date.today().year
+        if v < 1990 or v > current_year:
+            raise ValueError(f"Tahun kendaraan harus antara 1990 dan {current_year}")
+        return v
+
+    @field_validator("tarif_sewa", mode="before")
+    @classmethod
+    def validate_tarif_sewa(cls, v):
+        if v is None:
+            return v
+        if v <= 0:
+            raise ValueError("Tarif sewa harus lebih dari 0")
+        return v
+
+    @field_validator("status")
+    @classmethod
+    def validate_status(cls, v):
+        if v is None:
+            return v
+        v = v.strip().lower()
+        if v not in VALID_VEHICLE_STATUS:
+            raise ValueError(f"Status tidak valid. Pilihan: {', '.join(sorted(VALID_VEHICLE_STATUS))}")
+        return v
+
+class VehicleResponse(BaseModel):
+    id: UUID
+    plat_nomor: str
+    merek: str
+    model: str
+    tahun: int
+    tarif_sewa: int
+    status: str
+    organization_id: UUID
+    created_at: datetime
+
+    @field_validator("tarif_sewa", mode="before")
+    @classmethod
+    def coerce_tarif_sewa(cls, v):
+        return int(v)
+
+    @field_validator("status", mode="before")
+    @classmethod
+    def convert_status_enum(cls, v):
+        return v.value if hasattr(v, "value") else str(v)
+
+    class Config:
+        from_attributes = True
+
+class PaginatedVehicleResponse(BaseModel):
+    items: List[VehicleResponse]
+    total: int
+    page: int
+    limit: int
+
+class VehicleDeleteResponse(BaseModel):
+    message: str
+    deleted_at: datetime
+
+# --- Transaction Category Master ---
+
+class TransactionCategoryMasterCreate(BaseModel):
+    name: str
+    type: str
+
+    @field_validator("name")
+    @classmethod
+    def validate_name(cls, v: str) -> str:
+        v = v.strip()
+        if len(v) < 2 or len(v) > 100:
+            raise ValueError("Nama kategori harus antara 2 sampai 100 karakter")
+        return v
+
+    @field_validator("type")
+    @classmethod
+    def validate_type(cls, v: str) -> str:
+        v = v.strip().lower()
+        if v not in {"in", "out"}:
+            raise ValueError("Tipe kategori harus 'in' atau 'out'")
+        return v
+
+class TransactionCategoryMasterResponse(BaseModel):
+    id: UUID
+    name: str
+    type: str
+    is_default: bool
+    organization_id: UUID
+    created_at: datetime
+
+    class Config:
+        from_attributes = True

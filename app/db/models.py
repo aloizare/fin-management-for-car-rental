@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, Numeric, Date, Text, ForeignKey, DateTime, Enum, Integer, Boolean
+from sqlalchemy import Column, String, Numeric, Date, Text, ForeignKey, DateTime, Enum, Integer, Boolean, UniqueConstraint
 from sqlalchemy.dialects.postgresql import UUID
 import uuid
 from datetime import datetime
@@ -38,6 +38,39 @@ class Transaction(Base):
     transaction_date = Column(Date, nullable=False) 
     note = Column(Text)
     organization_id = Column(UUID(as_uuid=True), ForeignKey('organizations.id'))
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    deleted_at = Column(DateTime, nullable=True)
+
+class VehicleStatus(enum.Enum):
+    AKTIF = "aktif"
+    TIDAK_AKTIF = "tidak_aktif"
+    DALAM_PERAWATAN = "dalam_perawatan"
+
+class Vehicle(Base):
+    __tablename__ = 'vehicles'
+    __table_args__ = (
+        UniqueConstraint('plat_nomor', 'organization_id', name='uq_vehicle_plat_org'),
+    )
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    plat_nomor = Column(String, nullable=False)
+    merek = Column(String, nullable=False)
+    model = Column(String, nullable=False)
+    tahun = Column(Integer, nullable=False)
+    tarif_sewa = Column(Numeric, nullable=False)
+    status = Column(Enum(VehicleStatus), nullable=False, default=VehicleStatus.AKTIF)
+    organization_id = Column(UUID(as_uuid=True), ForeignKey('organizations.id'), nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    deleted_at = Column(DateTime, nullable=True)
+
+class TransactionCategoryMaster(Base):
+    __tablename__ = 'transaction_category_masters'
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    name = Column(String, nullable=False)
+    type = Column(String, nullable=False)  # "in" atau "out"
+    is_default = Column(Boolean, nullable=False, default=False)
+    organization_id = Column(UUID(as_uuid=True), ForeignKey('organizations.id'), nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     deleted_at = Column(DateTime, nullable=True)
