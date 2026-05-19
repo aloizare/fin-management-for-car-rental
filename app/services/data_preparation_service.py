@@ -180,7 +180,7 @@ def _format_transaction(t: models.Transaction) -> dict:
     return {
         "id": str(t.id),
         "amount": t.amount,
-        "category": t.category.value,  # "in" atau "out"
+        "category": t.category.value,
         "transaction_date": t.transaction_date.isoformat(),
         "note": t.note or "",
         "organization_id": str(t.organization_id),
