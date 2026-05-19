@@ -33,10 +33,14 @@ class User(Base):
 class Transaction(Base):
     __tablename__ = 'transactions'
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    amount = Column(Numeric, nullable=False) 
+    amount = Column(Numeric, nullable=False)
     category = Column(Enum(TransactionCategory), nullable=False)
-    transaction_date = Column(Date, nullable=False) 
+    category_id = Column(UUID(as_uuid=True), ForeignKey('transaction_category_masters.id'), nullable=True)
+    vehicle_id = Column(UUID(as_uuid=True), ForeignKey('vehicles.id'), nullable=True)
+    unit = Column(Integer, nullable=False, default=1)
+    transaction_date = Column(Date, nullable=False)
     note = Column(Text)
+    bukti_path = Column(String, nullable=True)
     organization_id = Column(UUID(as_uuid=True), ForeignKey('organizations.id'))
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

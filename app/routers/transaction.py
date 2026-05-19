@@ -23,6 +23,7 @@ from app.services.transaction_service import (
     get_daily_profit_report,
     get_weekly_profit_report,
     predict_next_month_income,
+    upload_bukti,
 )
 
 router = APIRouter(prefix="/transactions", tags=["Transaction"])
@@ -139,6 +140,21 @@ def update_transaction_by_id(
         transaction_data=transaction_data,
         organization_id=str(current_user.organization_id),
     )
+
+@router.post("/{transaction_id}/upload-bukti", response_model=schemas.TransactionResponse)
+async def upload_bukti_transaksi(
+    transaction_id: UUID,
+    file: UploadFile = File(...),
+    current_user: models.User = Depends(authenticated_user),
+    db: Session = Depends(get_db),
+):
+    return await upload_bukti(
+        db=db,
+        transaction_id=str(transaction_id),
+        organization_id=str(current_user.organization_id),
+        file=file,
+    )
+
 
 @router.delete("/{transaction_id}", response_model=schemas.TransactionDeleteResponse)
 def delete_transaction_by_id(

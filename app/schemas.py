@@ -97,9 +97,18 @@ class LogoutResponse(BaseModel):
 
 class TransactionCreate(BaseModel):
     amount: int
-    category: str
+    category_id: UUID
+    vehicle_id: Optional[UUID] = None
+    unit: int = 1
     transaction_date: str
     note: Optional[str] = None
+
+    @field_validator("unit")
+    @classmethod
+    def validate_unit(cls, v: int) -> int:
+        if v < 1:
+            raise ValueError("Jumlah unit minimal 1")
+        return v
 
     @field_validator("amount")
     @classmethod
@@ -108,14 +117,6 @@ class TransactionCreate(BaseModel):
             raise ValueError("Jumlah transaksi harus berupa angka bulat positif")
         if v <= 0:
             raise ValueError("Jumlah transaksi harus positif")
-        return v
-
-    @field_validator("category")
-    @classmethod
-    def validate_category(cls, v: str) -> str:
-        v = v.strip().lower()
-        if v not in {"in", "out"}:
-            raise ValueError("Pilih kategori pemasukan atau pengeluaran")
         return v
 
     @field_validator("transaction_date")
@@ -135,8 +136,13 @@ class TransactionResponse(BaseModel):
     id: UUID
     amount: int
     category: str
+    category_id: Optional[UUID] = None
     transaction_date: date
     note: Optional[str]
+    vehicle_id: Optional[UUID] = None
+    unit: int = 1
+    bukti_path: Optional[str] = None
+    bukti_url: Optional[str] = None
     organization_id: UUID
     created_at: datetime
 
@@ -152,8 +158,17 @@ class TransactionResponse(BaseModel):
     def convert_enum_to_str(cls, v):
         return v.value if hasattr(v, "value") else str(v)
 
+    @field_validator("bukti_url", mode="before")
+    @classmethod
+    def build_bukti_url(cls, v):
+        return v
+
     class Config:
         from_attributes = True
+
+    def model_post_init(self, __context):
+        if self.bukti_path and not self.bukti_url:
+            self.bukti_url = f"/uploads/{self.bukti_path}"
 
 class PaginatedTransactionResponse(BaseModel):
     items: List[TransactionResponse]
@@ -164,6 +179,7 @@ class PaginatedTransactionResponse(BaseModel):
 class TransactionUpdate(BaseModel):
     amount: Optional[int] = None
     category: Optional[str] = None
+    category_id: Optional[UUID] = None
     transaction_date: Optional[date] = None
     note: Optional[str] = None
 
