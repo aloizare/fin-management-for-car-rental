@@ -401,7 +401,6 @@ async def upload_bukti(
     with open(file_path, "wb") as f:
         f.write(content)
 
-    # Hapus file lama jika ada
     if transaction.bukti_path:
         old_path = os.path.join(UPLOAD_DIR, transaction.bukti_path)
         if os.path.exists(old_path):
