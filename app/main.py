@@ -1,13 +1,15 @@
 import json
+import os
 from fastapi import FastAPI, Request, status
 from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
+from fastapi.staticfiles import StaticFiles
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import Response as StarletteResponse
 
 from app.db import models
 from app.db.database import engine
-from app.routers import auth, organization, transaction, dashboard
+from app.routers import auth, organization, transaction, dashboard, vehicle, master_category
 
 models.Base.metadata.create_all(bind=engine)
 
@@ -74,6 +76,11 @@ app.include_router(auth.router)
 app.include_router(organization.router)
 app.include_router(transaction.router)
 app.include_router(dashboard.router)
+app.include_router(vehicle.router)
+app.include_router(master_category.router)
+
+os.makedirs("uploads", exist_ok=True)
+app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 
 @app.get("/")
 def read_root():

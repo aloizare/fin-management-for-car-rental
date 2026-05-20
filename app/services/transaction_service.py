@@ -327,11 +327,16 @@ def create_transaction(
     if not org:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Organisasi tidak ditemukan")
 
-    # Validasi ulang (defensive, walau sudah divalidasi Pydantic)
+    category_master = db.query(models.TransactionCategoryMaster).filter(
+        models.TransactionCategoryMaster.id == str(tx_data.category_id),
+        models.TransactionCategoryMaster.organization_id == organization_id,
+        models.TransactionCategoryMaster.deleted_at.is_(None),
+    ).first()
+    if not category_master:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Kategori tidak ditemukan")
+
     if tx_data.amount is None or tx_data.amount <= 0:
         raise HTTPException(status_code=422, detail="Jumlah transaksi harus positif")
-    if tx_data.category not in ("in", "out"):
-        raise HTTPException(status_code=422, detail="Pilih kategori pemasukan atau pengeluaran")
     try:
         trx_date = datetime.strptime(tx_data.transaction_date, "%Y-%m-%d").date()
     except Exception:
@@ -339,9 +344,21 @@ def create_transaction(
     if trx_date > date.today():
         raise HTTPException(status_code=422, detail="Tanggal tidak boleh lebih besar dari hari ini")
 
+    if tx_data.vehicle_id:
+        vehicle = db.query(models.Vehicle).filter(
+            models.Vehicle.id == str(tx_data.vehicle_id),
+            models.Vehicle.organization_id == organization_id,
+            models.Vehicle.deleted_at.is_(None),
+        ).first()
+        if not vehicle:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Kendaraan tidak ditemukan")
+
     db_transaction = models.Transaction(
         amount=tx_data.amount,
-        category=models.TransactionCategory(tx_data.category),
+        category=models.TransactionCategory(category_master.type),
+        category_id=str(tx_data.category_id),
+        vehicle_id=str(tx_data.vehicle_id) if tx_data.vehicle_id else None,
+        unit=tx_data.unit,
         transaction_date=trx_date,
         note=tx_data.note,
         organization_id=organization_id,
@@ -350,6 +367,50 @@ def create_transaction(
     db.commit()
     db.refresh(db_transaction)
     return db_transaction
+
+
+UPLOAD_DIR = "uploads"
+
+async def upload_bukti(
+    db: Session,
+    transaction_id: str,
+    organization_id: str,
+    file: UploadFile,
+) -> models.Transaction:
+    import os, uuid as uuid_lib
+
+    transaction = _get_owned_transaction(db, organization_id, transaction_id)
+
+    allowed_types = {"image/jpeg", "image/png", "image/webp", "application/pdf"}
+    if file.content_type not in allowed_types:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="File harus berupa gambar (JPG/PNG/WEBP) atau PDF",
+        )
+
+    os.makedirs(UPLOAD_DIR, exist_ok=True)
+
+    ext = file.filename.rsplit(".", 1)[-1] if "." in file.filename else "bin"
+    filename = f"{uuid_lib.uuid4()}.{ext}"
+    file_path = os.path.join(UPLOAD_DIR, filename)
+
+    content = await file.read()
+    if len(content) > 5 * 1024 * 1024:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Ukuran file maksimal 5MB")
+
+    with open(file_path, "wb") as f:
+        f.write(content)
+
+    if transaction.bukti_path:
+        old_path = os.path.join(UPLOAD_DIR, transaction.bukti_path)
+        if os.path.exists(old_path):
+            os.remove(old_path)
+
+    transaction.bukti_path = filename
+    transaction.updated_at = datetime.utcnow()
+    db.commit()
+    db.refresh(transaction)
+    return transaction
 
 def get_paginated_transactions(
     db: Session,
