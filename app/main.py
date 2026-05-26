@@ -6,12 +6,20 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.staticfiles import StaticFiles
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import Response as StarletteResponse
+from alembic.config import Config
+from alembic import command
 
 from app.db import models
 from app.db.database import engine
 from app.routers import auth, organization, transaction, dashboard, vehicle, master_category
 
-models.Base.metadata.create_all(bind=engine)
+# --- Auto migration: jalankan alembic upgrade head saat startup ---
+def run_migrations():
+    alembic_cfg = Config("/app/alembic.ini")
+    alembic_cfg.set_main_option("script_location", "/app/alembic")
+    command.upgrade(alembic_cfg, "head")
+
+run_migrations()
 
 app = FastAPI(title="Fin-Management API", version="1.0.0", redirect_slashes=False)
 

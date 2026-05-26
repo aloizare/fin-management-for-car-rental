@@ -19,8 +19,14 @@ COPY --from=builder /install /usr/local
 # Copy application source
 COPY app/ ./app/
 
+# Copy alembic migrations
+COPY alembic/ ./alembic/
+COPY alembic.ini ./alembic.ini
+
 # Non-root user for security
-RUN addgroup --system appgroup && adduser --system --ingroup appgroup appuser
+RUN addgroup --system appgroup && adduser --system --ingroup appgroup appuser \
+    && mkdir -p /app/uploads \
+    && chown -R appuser:appgroup /app/uploads
 USER appuser
 
 EXPOSE 8000
