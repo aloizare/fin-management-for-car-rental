@@ -1,3 +1,12 @@
+---
+title: Fin Management Car Rental API
+emoji: 🚗
+colorFrom: blue
+colorTo: green
+sdk: docker
+app_port: 8000
+---
+
 # Sistem Manajemen Keuangan Rental Mobil - Backend API
 
 Repositori ini berisi *source code* untuk sisi *Backend* dari aplikasi Sistem Manajemen Keuangan Rental Mobil. API ini dirancang untuk mengelola data organisasi, autentikasi pengguna, pencatatan transaksi (pemasukan/pengeluaran), dan nantinya menyajikan data laporan keuangan.
