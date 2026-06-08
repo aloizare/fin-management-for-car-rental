@@ -19,10 +19,13 @@ COPY --from=builder /install /usr/local
 # Copy application source
 COPY app/ ./app/
 
-# Non-root user for security
-RUN addgroup --system appgroup && adduser --system --ingroup appgroup appuser
-USER appuser
+# Copy alembic migrations
+COPY alembic/ ./alembic/
+COPY alembic.ini ./alembic.ini
 
-EXPOSE 8000
+# HF Spaces runs as user with UID 1000
+RUN mkdir -p /app/uploads && chmod 777 /app/uploads
 
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+EXPOSE 7860
+
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "7860"]
