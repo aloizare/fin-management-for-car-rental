@@ -15,9 +15,12 @@ from app.routers import auth, organization, transaction, dashboard, vehicle, mas
 
 # --- Auto migration: jalankan alembic upgrade head saat startup ---
 def run_migrations():
-    alembic_cfg = Config("/app/alembic.ini")
-    alembic_cfg.set_main_option("script_location", "/app/alembic")
-    command.upgrade(alembic_cfg, "head")
+    try:
+        alembic_cfg = Config("/app/alembic.ini")
+        alembic_cfg.set_main_option("script_location", "/app/alembic")
+        command.upgrade(alembic_cfg, "head")
+    except Exception as e:
+        print(f"Migration warning: {e}")
 
 run_migrations()
 
