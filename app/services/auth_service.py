@@ -27,7 +27,7 @@ def login(email: str, password: str, db: Session) -> dict:
             "sub": user.email,
             "user_id": str(user.id),
             "role": user.role,
-            "organization_id": user.organization_id,
+            "organization_id": str(user.organization_id) if user.organization_id else None,
         }
     )
 
