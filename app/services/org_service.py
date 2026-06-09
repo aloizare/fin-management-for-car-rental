@@ -10,6 +10,13 @@ def get_all_organizations(db: Session):
     return db.query(models.Organization).all()
 
 
+def get_organization_by_id(org_id: str, db: Session) -> models.Organization:
+    org = db.query(models.Organization).filter(models.Organization.id == org_id).first()
+    if not org:
+        raise HTTPException(status_code=404, detail="Organisasi tidak ditemukan")
+    return org
+
+
 def create_organization(org: schemas.OrganizationCreate, db: Session) -> models.Organization:
     db_org = (
         db.query(models.Organization)
