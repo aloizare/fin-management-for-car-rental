@@ -45,7 +45,14 @@ class UserCreate(BaseModel):
     email: EmailStr
     password: str
     role: str
-    organization_id: UUID
+    organization_code: str
+
+    @field_validator("organization_code")
+    @classmethod
+    def validate_organization_code(cls, v: str) -> str:
+        if not v.isalnum():
+            raise ValueError("Organization code harus alphanumeric")
+        return v
 
     @field_validator("username")
     @classmethod

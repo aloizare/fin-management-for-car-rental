@@ -50,18 +50,18 @@ def register_user(user: schemas.UserCreate, db: Session) -> models.User:
 
     db_org = (
         db.query(models.Organization)
-        .filter(models.Organization.id == user.organization_id)
+        .filter(models.Organization.organization_code == user.organization_code)
         .first()
     )
     if not db_org:
-        raise HTTPException(status_code=404, detail="Organisasi tidak ditemukan")
+        raise HTTPException(status_code=404, detail="Kode Organisasi tidak ditemukan")
 
     new_user = models.User(
         username=user.username,
         email=user.email,
         password=get_password_hash(user.password),
         role=user.role,
-        organization_id=user.organization_id,
+        organization_id=db_org.id,
     )
     db.add(new_user)
     db.commit()
