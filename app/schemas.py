@@ -50,8 +50,9 @@ class UserCreate(BaseModel):
     @field_validator("organization_code")
     @classmethod
     def validate_organization_code(cls, v: str) -> str:
-        if not v.isalnum():
-            raise ValueError("Organization code harus alphanumeric")
+        v = v.strip()
+        if not re.fullmatch(r"[a-zA-Z0-9_\-]+", v):
+            raise ValueError("Organization code hanya boleh huruf, angka, dash (-), dan underscore (_)")
         return v
 
     @field_validator("username")
