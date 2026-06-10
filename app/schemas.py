@@ -261,11 +261,15 @@ class WeeklyProfitResponse(BaseModel):
     profit: float
 
 class IncomePredictionResponse(BaseModel):
-    next_month: str
-    next_year: int
-    predicted_income: float
-    historical_data_points: int
-    equation: str
+    months: list[str] = []
+    income_per_month: list[float] = []
+    next_month: Optional[str] = None
+    predicted_next_month_income: Optional[float] = None
+    trend_up: Optional[bool] = None
+    percentage_change: Optional[float] = None
+    predict_available: bool = False
+    ai_recommendation: Optional[str] = None
+    error: Optional[str] = None
 
 # --- Vehicle ---
 

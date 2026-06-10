@@ -41,7 +41,7 @@ def create_new_transaction(
         organization_id=str(current_user.organization_id)
     )
 
-@router.get("/predict-income")
+@router.get("/predict-income", response_model=schemas.IncomePredictionResponse)
 def predict_income_next_month(
     current_user: models.User = Depends(authenticated_user),
     db: Session = Depends(get_db),

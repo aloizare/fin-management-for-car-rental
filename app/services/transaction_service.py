@@ -17,6 +17,7 @@ import numpy as np
 from app.db import models
 from app import schemas
 from app.services.data_preparation_service import prepare_transaction_data, prepare_daily_transaction_data, prepare_weekly_transaction_data
+from app.services.recommendation_service import get_financial_recommendation
 
 def predict_next_month_income(db: Session, organization_id: str):
     data = prepare_transaction_data(organization_id=organization_id, db=db)
@@ -94,7 +95,7 @@ def predict_next_month_income(db: Session, organization_id: str):
     else:
         next_month = f"{last_date.year}-{last_date.month + 1:02d}"
 
-    return {
+    prediction_result = {
         "months": [item["month"] for item in income_data],
         "income_per_month": incomes,
         "next_month": next_month,
@@ -103,6 +104,11 @@ def predict_next_month_income(db: Session, organization_id: str):
         "percentage_change": round(percentage_change, 2),
         "predict_available" : True
     }
+
+    ai_rec = get_financial_recommendation(db, organization_id, prediction_result)
+    prediction_result["ai_recommendation"] = ai_rec
+
+    return prediction_result
 
 def _validate_row(row: dict, row_num: int) -> dict:
     errors = []
