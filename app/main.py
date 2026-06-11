@@ -28,6 +28,9 @@ app = FastAPI(title="Fin-Management API", version="1.0.0", redirect_slashes=Fals
 
 class StandardResponseMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
+        if request.url.path in ["/docs", "/redoc", "/openapi.json"]:
+            return await call_next(request)
+
         response = await call_next(request)
         content_type = response.headers.get("content-type", "")
         if "application/json" not in content_type:

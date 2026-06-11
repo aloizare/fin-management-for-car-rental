@@ -45,7 +45,15 @@ class UserCreate(BaseModel):
     email: EmailStr
     password: str
     role: str
-    organization_id: UUID
+    organization_code: str
+
+    @field_validator("organization_code")
+    @classmethod
+    def validate_organization_code(cls, v: str) -> str:
+        v = v.strip()
+        if not re.fullmatch(r"[a-zA-Z0-9_\-]+", v):
+            raise ValueError("Organization code hanya boleh huruf, angka, dash (-), dan underscore (_)")
+        return v
 
     @field_validator("username")
     @classmethod
@@ -261,11 +269,15 @@ class WeeklyProfitResponse(BaseModel):
     profit: float
 
 class IncomePredictionResponse(BaseModel):
-    next_month: str
-    next_year: int
-    predicted_income: float
-    historical_data_points: int
-    equation: str
+    months: list[str] = []
+    income_per_month: list[float] = []
+    next_month: Optional[str] = None
+    predicted_next_month_income: Optional[float] = None
+    trend_up: Optional[bool] = None
+    percentage_change: Optional[float] = None
+    predict_available: bool = False
+    ai_recommendation: Optional[str] = None
+    error: Optional[str] = None
 
 # --- Vehicle ---
 
@@ -428,3 +440,47 @@ class TransactionCategoryMasterResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+# --- Dashboard V2 ---
+
+class TrendInfo(BaseModel):
+    percentage: float
+    is_positive: bool
+    text: str
+
+class SummaryCard(BaseModel):
+    value: float
+    trend: Optional[TrendInfo] = None
+
+class SummaryCardsV2(BaseModel):
+    total_revenue: SummaryCard
+    total_expenditure: SummaryCard
+    net_profit: SummaryCard
+
+class ChartDataset(BaseModel):
+    label: str
+    color_hex: Optional[str] = None
+    data: list[float]
+
+class ChartDataV2(BaseModel):
+    y_axis_unit: Optional[str] = None
+    labels: list[str]
+    dataset: ChartDataset
+
+class TopExpenditureMonth(BaseModel):
+    month: str
+    year: int
+    total_expenditure: float
+
+class ChartsV2(BaseModel):
+    revenue: ChartDataV2
+    expenditure: ChartDataV2
+    accumulated_profit: ChartDataV2
+    top_expenditures: list[TopExpenditureMonth]
+
+class DashboardV2Data(BaseModel):
+    summary_cards: SummaryCardsV2
+    charts: ChartsV2
+
+class DashboardV2Response(BaseModel):
+    data: DashboardV2Data

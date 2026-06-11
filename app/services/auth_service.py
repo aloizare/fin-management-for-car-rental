@@ -23,7 +23,12 @@ def login(email: str, password: str, db: Session) -> dict:
         raise HTTPException(status_code=401, detail="Email atau Password salah")
 
     token = create_access_token(
-        {"sub": user.email, "user_id": str(user.id), "role": user.role}
+        {
+            "sub": user.email,
+            "user_id": str(user.id),
+            "role": user.role,
+            "organization_id": str(user.organization_id) if user.organization_id else None,
+        }
     )
 
     auth_session = models.Authentication(
