@@ -1,5 +1,7 @@
 
+import calendar
 from datetime import date
+from app import schemas
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from sqlalchemy import func, case, desc
@@ -143,6 +145,132 @@ def get_dashboard(
                     }
                 },
                 "expenditure_list": expenditure_list
+            }
+        }
+    }
+
+def get_month_range(year: int, month: int):
+    start_date = date(year, month, 1)
+    _, last_day = calendar.monthrange(year, month)
+    end_date = date(year, month, last_day)
+    return start_date, end_date
+
+@router.get("/v2", response_model=schemas.DashboardV2Response)
+def get_dashboard_v2(
+    db: Session = Depends(get_db),
+    current_user=Depends(authenticated_user)
+):
+    today = date.today()
+    org_id = current_user.organization_id
+
+    # 1. Summary Cards (Current month vs Last month)
+    cur_start, cur_end = get_month_range(today.year, today.month)
+    
+    if today.month == 1:
+        prev_month, prev_year = 12, today.year - 1
+    else:
+        prev_month, prev_year = today.month - 1, today.year
+    prev_start, prev_end = get_month_range(prev_year, prev_month)
+
+    def get_totals(start_d, end_d):
+        res = db.query(
+            func.sum(case((Transaction.category == TransactionCategory.IN, Transaction.amount), else_=0)).label("rev"),
+            func.sum(case((Transaction.category == TransactionCategory.OUT, Transaction.amount), else_=0)).label("exp")
+        ).filter(
+            Transaction.organization_id == org_id,
+            Transaction.deleted_at.is_(None),
+            Transaction.transaction_date.between(start_d, end_d)
+        ).first()
+        return float(res.rev or 0), float(res.exp or 0)
+
+    cur_rev, cur_exp = get_totals(cur_start, cur_end)
+    prev_rev, prev_exp = get_totals(prev_start, prev_end)
+    
+    cur_profit = cur_rev - cur_exp
+    prev_profit = prev_rev - prev_exp
+
+    revenue_trend = calc_trend(cur_rev, prev_rev)
+    expenditure_trend = calc_trend(cur_exp, prev_exp)
+    profit_trend = calc_trend(cur_profit, prev_profit)
+
+    # 2. Charts (Last 12 months)
+    months_labels = []
+    rev_data = []
+    exp_data = []
+    
+    twelve_months_ago = today.replace(day=1)
+    for _ in range(11):
+        if twelve_months_ago.month == 1:
+            twelve_months_ago = twelve_months_ago.replace(year=twelve_months_ago.year - 1, month=12)
+        else:
+            twelve_months_ago = twelve_months_ago.replace(month=twelve_months_ago.month - 1)
+
+    chart_start_date = twelve_months_ago
+    
+    chart_rows = db.query(
+        func.extract('year', Transaction.transaction_date).label('year'),
+        func.extract('month', Transaction.transaction_date).label('month'),
+        func.sum(case((Transaction.category == TransactionCategory.IN, Transaction.amount), else_=0)).label('revenue'),
+        func.sum(case((Transaction.category == TransactionCategory.OUT, Transaction.amount), else_=0)).label('expenditure')
+    ).filter(
+        Transaction.organization_id == org_id,
+        Transaction.deleted_at.is_(None),
+        Transaction.transaction_date >= chart_start_date
+    ).group_by('year', 'month').all()
+
+    chart_map = {(int(r.year), int(r.month)): r for r in chart_rows}
+
+    curr = chart_start_date
+    while curr <= today:
+        y, m = curr.year, curr.month
+        months_labels.append(f"{calendar.month_abbr[m]} {y}")
+        row = chart_map.get((y, m))
+        rev_data.append(float(row.revenue) if row else 0.0)
+        exp_data.append(float(row.expenditure) if row else 0.0)
+        
+        if m == 12:
+            curr = curr.replace(year=y+1, month=1)
+        else:
+            curr = curr.replace(month=m+1)
+
+    # 3. YTD Profit (Accumulated over the last 12 months for the chart)
+    # The requirement is "akumulasi laba Year to Date". We'll supply it via the accumulated_profit chart.
+    acc = 0
+    acc_data = []
+    for r, e in zip(rev_data, exp_data):
+        acc += (r - e)
+        acc_data.append(acc)
+
+    # 4. Top 5 Expenditure Months (All Time replaced by 1 Year last per feedback)
+    # chart_map already contains data for the last 1 year, so we just sort it.
+    top_exp = sorted(
+        [{"year": y, "month": calendar.month_abbr[m], "total_expenditure": float(r.expenditure)} 
+         for (y, m), r in chart_map.items()],
+        key=lambda x: x["total_expenditure"],
+        reverse=True
+    )[:5]
+
+    return {
+        "data": {
+            "summary_cards": {
+                "total_revenue": {"value": cur_rev, "trend": revenue_trend},
+                "total_expenditure": {"value": cur_exp, "trend": expenditure_trend},
+                "net_profit": {"value": cur_profit, "trend": profit_trend}
+            },
+            "charts": {
+                "revenue": {
+                    "labels": months_labels,
+                    "dataset": {"label": "Pendapatan", "color_hex": "#4A72E8", "data": rev_data}
+                },
+                "expenditure": {
+                    "labels": months_labels,
+                    "dataset": {"label": "Pengeluaran", "color_hex": "#34C78B", "data": exp_data}
+                },
+                "accumulated_profit": {
+                    "labels": months_labels,
+                    "dataset": {"label": "Akumulasi Profit (1 Tahun Terakhir)", "data": acc_data}
+                },
+                "top_expenditures": top_exp
             }
         }
     }

@@ -440,3 +440,47 @@ class TransactionCategoryMasterResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+# --- Dashboard V2 ---
+
+class TrendInfo(BaseModel):
+    percentage: float
+    is_positive: bool
+    text: str
+
+class SummaryCard(BaseModel):
+    value: float
+    trend: Optional[TrendInfo] = None
+
+class SummaryCardsV2(BaseModel):
+    total_revenue: SummaryCard
+    total_expenditure: SummaryCard
+    net_profit: SummaryCard
+
+class ChartDataset(BaseModel):
+    label: str
+    color_hex: Optional[str] = None
+    data: list[float]
+
+class ChartDataV2(BaseModel):
+    y_axis_unit: Optional[str] = None
+    labels: list[str]
+    dataset: ChartDataset
+
+class TopExpenditureMonth(BaseModel):
+    month: str
+    year: int
+    total_expenditure: float
+
+class ChartsV2(BaseModel):
+    revenue: ChartDataV2
+    expenditure: ChartDataV2
+    accumulated_profit: ChartDataV2
+    top_expenditures: list[TopExpenditureMonth]
+
+class DashboardV2Data(BaseModel):
+    summary_cards: SummaryCardsV2
+    charts: ChartsV2
+
+class DashboardV2Response(BaseModel):
+    data: DashboardV2Data
